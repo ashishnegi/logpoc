@@ -2,10 +2,26 @@
 //
 
 #include <iostream>
+#include <fstream>
+#include <vector>
+#include <thread>
 
 int main()
 {
     std::cout << "Hello World!\n";
+    std::fstream file("logpoc1.log", std::ios::in | std::ios::out);
+
+    // can we write to different offset
+    file.seekg(10);
+    file.tellg();
+    
+    file.write("ab", 2);
+
+    std::vector<std::thread> threads;
+    for (int i = 0; i < 10; ++i) {
+
+    }
+    
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu

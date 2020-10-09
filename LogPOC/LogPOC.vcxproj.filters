@@ -18,5 +18,8 @@
     <ClCompile Include="LogPOC.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="fstream.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
