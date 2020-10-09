@@ -89,24 +89,24 @@ TEST(fstream, read_write_with_same_fstream) {
 
 void write_concurrently(string filename, const int data_in_gb, const int num_threads, const char start_char,
     bool stream_cache = true) {
-    const int offset = 4 * 1024;
+    const int offset = 8 * 1024;
     const long long num_records_each_thread = (data_in_gb * 1024 * ((1024 * 1024)/ (num_threads * offset)));
 
     {
         auto write_file_fn = [&](int index) {
             // each thread has its own handle
-            ofstream file_handle(filename, fstream::_Nocreate | fstream::binary);
+            fstream file_handle(filename, fstream::in  | fstream::out | fstream::ate | fstream::binary);
             if (!stream_cache) {
                 file_handle.rdbuf()->pubsetbuf(nullptr, 0); // no bufferring in fstream
             }
 
-            file_handle.seekp(0);
+            file_handle.seekp(0, ios_base::beg);
 
             vector<char> data(offset, (char)(index + start_char));
             long long myoffset = index * offset;
 
             for (long long i = 0; i < num_records_each_thread; ++i) {
-                file_handle.seekp(myoffset);
+                file_handle.seekp(myoffset, ios_base::beg);
                 file_handle.write(data.data(), offset);
                 myoffset += num_threads * offset;
             }
@@ -126,7 +126,8 @@ void write_concurrently(string filename, const int data_in_gb, const int num_thr
 
         auto end_time = chrono::high_resolution_clock::now();
 
-        std::cout << "Data written : " << data_in_gb << " GB with " << num_threads << " threads " << " with cache " << stream_cache ? "true " : "false ";
+        std::cout << "Data written : " << data_in_gb << " GB, " << num_threads << " threads " 
+            << ", cache " << (stream_cache ? "true " : "false ") << ", size " << offset << " bytes ";
         std::cout << "Time taken: " << (end_time - start_time).count() / 1000 << " micro-secs" << std::endl;
     }
 
@@ -180,7 +181,7 @@ TEST(fstream, write_concurrently_to_same_file) {
         fstream file(filename, fstream::in | fstream::out | fstream::trunc | fstream::binary);
     }
 
-    write_concurrently(filename, 8, 4, 'A'); // concurrent is slower than 1 thread
+    write_concurrently(filename, 2, 4, 'A'); // concurrent is slower than 1 thread
 
     std::remove(filename.c_str());
 }
@@ -188,14 +189,14 @@ TEST(fstream, write_concurrently_to_same_file) {
 // Preallocated file
 TEST(fstream, preallocated_file_concurrent_writes) {
     string filename = "file5.log";
-    const int data_in_gb = 8;
+    const int data_in_gb = 2;
     {
         // create file before write threads start.
         fstream file(filename, fstream::in | fstream::out | fstream::trunc | fstream::binary);
         write_concurrently(filename, data_in_gb, 1, 'A');
     }
 
-    std::cout << "Preallocated file." << std::endl;
+    std::cout << "Preallocated file 5." << std::endl;
     write_concurrently(filename, data_in_gb, 1, 'B');
     write_concurrently(filename, data_in_gb, 4, 'C');
 
@@ -212,7 +213,7 @@ TEST(fstream, preallocated_file_concurrent_writes_stream_cache) {
         write_concurrently(filename, data_in_gb, 1, 'A');
     }
 
-    std::cout << "Preallocated file." << std::endl;
+    std::cout << "Preallocated file 2." << std::endl;
     write_concurrently(filename, data_in_gb, 1, 'B', false);
     write_concurrently(filename, data_in_gb, 4, 'C', false);
 
