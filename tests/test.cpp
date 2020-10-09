@@ -87,7 +87,8 @@ TEST(fstream, read_write_with_same_fstream) {
     std::remove(filename.c_str());
 }
 
-void write_concurrently(string filename, const int data_in_gb, const int num_threads, const char start_char) {
+void write_concurrently(string filename, const int data_in_gb, const int num_threads, const char start_char,
+    bool stream_cache = true) {
     const int offset = 4 * 1024;
     const long long num_records_each_thread = (data_in_gb * 1024 * ((1024 * 1024)/ (num_threads * offset)));
 
@@ -95,7 +96,10 @@ void write_concurrently(string filename, const int data_in_gb, const int num_thr
         auto write_file_fn = [&](int index) {
             // each thread has its own handle
             ofstream file_handle(filename, fstream::_Nocreate | fstream::binary);
-            // file_handle.rdbuf()->pubsetbuf(nullptr, 0);
+            if (!stream_cache) {
+                file_handle.rdbuf()->pubsetbuf(nullptr, 0); // no bufferring in fstream
+            }
+
             file_handle.seekp(0);
 
             vector<char> data(offset, (char)(index + start_char));
@@ -122,7 +126,7 @@ void write_concurrently(string filename, const int data_in_gb, const int num_thr
 
         auto end_time = chrono::high_resolution_clock::now();
 
-        std::cout << "Data written : " << data_in_gb << " GB with " << num_threads << " threads. ";
+        std::cout << "Data written : " << data_in_gb << " GB with " << num_threads << " threads " << " with cache " << stream_cache ? "true " : "false ";
         std::cout << "Time taken: " << (end_time - start_time).count() / 1000 << " micro-secs" << std::endl;
     }
 
@@ -197,5 +201,25 @@ TEST(fstream, preallocated_file_concurrent_writes) {
 
     std::remove(filename.c_str());
 }
-// WriteThrough
-// Sparse file
+
+// Preallocated file + no stream cache
+TEST(fstream, preallocated_file_concurrent_writes_stream_cache) {
+    string filename = "file5.log";
+    const int data_in_gb = 8;
+    {
+        // create file before write threads start.
+        fstream file(filename, fstream::in | fstream::out | fstream::trunc | fstream::binary);
+        write_concurrently(filename, data_in_gb, 1, 'A');
+    }
+
+    std::cout << "Preallocated file." << std::endl;
+    write_concurrently(filename, data_in_gb, 1, 'B', false);
+    write_concurrently(filename, data_in_gb, 4, 'C', false);
+
+    std::remove(filename.c_str());
+}
+
+// WriteThrough + no_buffering flag
+// https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilea
+// Sparse file 
+// https://docs.microsoft.com/en-us/windows/win32/fileio/sparse-file-operations
