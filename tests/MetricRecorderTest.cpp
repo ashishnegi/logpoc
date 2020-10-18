@@ -5,6 +5,10 @@
 
 TEST(metric_recorder, can_add_get_values) {
     int n = 100;
+    int seed = time(nullptr);
+    std::cout << "Random seed: " << seed << std::endl;
+    std::srand(seed);
+
     for (int i = 0; i < n; ++i) {
         int size = (std::rand() % 4096) + 1;
         MetricRecorder m(size);

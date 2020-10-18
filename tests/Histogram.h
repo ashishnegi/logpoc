@@ -70,6 +70,13 @@ public:
         return percentiles;
     }
 
+    void Print(std::vector<double> pAt, std::vector<int> ps) {
+        assert(pAt.size() == ps.size());
+        std::cout << "Percentile => Latency (microseconds)" << std::endl;
+        for (int i = 0; i < pAt.size(); ++i) {
+            std::cout << pAt[i] << " => " << ps[i] << std::endl;
+        }
+    }
 private:
     const std::vector<MetricRecorder> & recorders;
 };

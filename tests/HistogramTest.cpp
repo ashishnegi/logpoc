@@ -5,6 +5,10 @@
 
 TEST(histogram, calculates_histogram) {
     int n = 100;
+    int seed = time(nullptr);
+    std::cout << "Random seed: " << seed << std::endl;
+    std::srand(seed);
+
     for (int i = 0; i < n; ++i) {
         int size = (std::rand() % 4096) + 1;
         int numMetrics = (std::rand() % 10) + 1;

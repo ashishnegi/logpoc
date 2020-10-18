@@ -64,11 +64,18 @@ public:
 
 private:
     bool CheckSpace(bool noThrow) const {
+        bool returnVal = false;
         if (curBucketIndex < (buckets.size() - 1)) {
-            return true;
+            returnVal = true;
+        } else if (curBucketIndex >= buckets.size()) {
+            returnVal = false;
+        } else if (curSlotIndex >= lastBucketSize) {
+            returnVal = false;
+        } else {
+            returnVal = true;
         }
 
-        if (curSlotIndex >= lastBucketSize) {
+        if (returnVal == false) {
             if (noThrow) {
                 return false;
             }
