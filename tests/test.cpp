@@ -8,6 +8,9 @@
 #include <vector>
 #include <thread>
 
+#include "MetricRecorder.h"
+#include "Histogram.h"
+
 using namespace std;
 
 namespace fs = experimental::filesystem;
@@ -103,13 +106,25 @@ TEST(fstream, read_write_with_same_fstream)
     std::remove(filename.c_str());
 }
 
+void PrintHistogram(std::vector<MetricRecorder> recorders) {
+    Histogram hgm(recorders);
+    std::vector<double> pAt{ .5, .75, .9, .99, .995, .999 };
+    auto ps = hgm.GetPercentiles(pAt);
+    hgm.Print(pAt, ps);
+}
+
 void write_concurrently(string filename, const int data_in_gb, const int num_threads, const char start_char,
     bool stream_cache = true) {
     const int offset = 4 * 1024;
     const long long num_records_each_thread = (data_in_gb * 1024 * ((1024 * 1024)/ (num_threads * offset)));
+    std::vector<MetricRecorder> recorders;
+    for (int i = 0; i < num_threads; ++i) {
+        recorders.push_back(MetricRecorder(num_records_each_thread));
+    }
 
     {
         auto write_file_fn = [&](int index) {
+            auto & recorder = recorders[index];
             // each thread has its own handle
             fstream file_handle(filename, fstream::in | fstream::out | fstream::ate | fstream::binary);
             if (!stream_cache)
@@ -121,15 +136,19 @@ void write_concurrently(string filename, const int data_in_gb, const int num_thr
 
             vector<char> data(offset, (char) (index + start_char));
             long long myoffset = index * offset;
+            auto clock = std::chrono::high_resolution_clock();
 
             for (long long i = 0; i < num_records_each_thread; ++i)
             {
+                auto start_time = clock.now();
+
                 file_handle.seekp(myoffset, ios_base::beg);
                 file_handle.write(data.data(), offset);
                 myoffset += num_threads * offset;
+                
+                auto end_time = clock.now();
+                recorder.Add(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count());
             }
-
-            // file_handle.flush();
         };
 
         auto start_time = chrono::high_resolution_clock::now();
@@ -185,6 +204,9 @@ void write_concurrently(string filename, const int data_in_gb, const int num_thr
             }
         }
     }
+
+    // Print histogram
+    PrintHistogram(recorders);
 }
 // analysis: Possible but multiple thread is slower because of exlsuive locking in filesystem : ExAcquireResourceExclusiveLite
 //Name                                                        	Inc %	     Inc	Exc %	   Exc	Fold	                             When	  First	       Last
@@ -261,6 +283,10 @@ void append_concurrently(string filename, const int data_in_gb, const int num_th
     bool stream_cache = true, bool flush = false) {
     const int offset = 4 * 1024;
     const long long num_records_each_thread = (data_in_gb * 1024 * ((1024 * 1024) / (num_threads * offset)));
+    std::vector<MetricRecorder> recorders;
+    for (int i = 0; i < num_threads; ++i) {
+        recorders.push_back(MetricRecorder(num_records_each_thread));
+    }
 
     // write to file.
     {
@@ -273,8 +299,11 @@ void append_concurrently(string filename, const int data_in_gb, const int num_th
         {
             auto write_file_fn = [&](int index) {
                 vector<char> data(offset, (char)(index + start_char));
+                MetricRecorder & recorder = recorders[index];
+                auto clock = std::chrono::high_resolution_clock();
 
                 for (long long i = 0; i < num_records_each_thread; ++i) {
+                    auto start_time = clock.now();
                     file_handle.write(data.data(), offset);
                     if (!file_handle) {
                         std::cout << "File write failed: "
@@ -285,9 +314,10 @@ void append_concurrently(string filename, const int data_in_gb, const int num_th
                     if (flush) {
                         file_handle.flush();
                     }
-                }
 
-                // file_handle.flush();
+                    auto end_time = clock.now();
+                    recorder.Add(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count());
+                }
             };
 
             auto start_time = chrono::high_resolution_clock::now();
@@ -309,6 +339,7 @@ void append_concurrently(string filename, const int data_in_gb, const int num_th
         }
     }
 
+    // read file to confirm that writes actually worked.
     {
         ifstream file(filename, fstream::in | fstream::binary);
         file.seekg(0, ios_base::end);
@@ -339,6 +370,9 @@ void append_concurrently(string filename, const int data_in_gb, const int num_th
             }
         }
     }
+
+    // print the latency histogram
+    PrintHistogram(recorders);
 }
 
 // Preallocated file + no stream cache
@@ -368,6 +402,7 @@ TEST(fstream, file_concurrent_appends) {
     //    }
     //    append_concurrently(filename, data_in_gb, 4, 'B', true);
     //}
+
     std::remove(filename.c_str());
 }
 
