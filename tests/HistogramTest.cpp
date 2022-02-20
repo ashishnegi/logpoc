@@ -5,9 +5,9 @@
 
 TEST(histogram, calculates_histogram) {
     int n = 100;
-    int seed = time(nullptr);
+    auto seed = time(nullptr);
     std::cout << "Random seed: " << seed << std::endl;
-    std::srand(seed);
+    std::srand((unsigned int) seed);
 
     for (int i = 0; i < n; ++i) {
         int size = (std::rand() % 4096) + 1;

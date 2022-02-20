@@ -4,7 +4,6 @@
 #include <fileapi.h>
 
 #include <fstream>
-#include <experimental/filesystem>
 #include <vector>
 #include <thread>
 
@@ -116,7 +115,7 @@ void PrintHistogram(std::vector<MetricRecorder> recorders) {
 void write_concurrently(string filename, const int data_in_gb, const int num_threads, const char start_char,
     bool stream_cache = true) {
     const int offset = 4 * 1024;
-    const long long num_records_each_thread = (data_in_gb * 1024 * ((1024 * 1024)/ (num_threads * offset)));
+    const int num_records_each_thread = (data_in_gb * 1024 * ((1024 * 1024)/ (num_threads * offset)));
     std::vector<MetricRecorder> recorders;
     for (int i = 0; i < num_threads; ++i) {
         recorders.push_back(MetricRecorder(num_records_each_thread));
@@ -147,7 +146,7 @@ void write_concurrently(string filename, const int data_in_gb, const int num_thr
                 myoffset += num_threads * offset;
                 
                 auto end_time = clock.now();
-                recorder.Add(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count());
+                recorder.Add((int) std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count());
             }
         };
 
@@ -282,7 +281,7 @@ TEST(fstream, preallocated_file_concurrent_writes_stream_cache)
 void append_concurrently(string filename, const int data_in_gb, const int num_threads, const char start_char,
     bool stream_cache = true, bool flush = false) {
     const int offset = 4 * 1024;
-    const long long num_records_each_thread = (data_in_gb * 1024 * ((1024 * 1024) / (num_threads * offset)));
+    const int num_records_each_thread = (data_in_gb * 1024 * ((1024 * 1024) / (num_threads * offset)));
     std::vector<MetricRecorder> recorders;
     for (int i = 0; i < num_threads; ++i) {
         recorders.push_back(MetricRecorder(num_records_each_thread));
@@ -316,7 +315,7 @@ void append_concurrently(string filename, const int data_in_gb, const int num_th
                     }
 
                     auto end_time = clock.now();
-                    recorder.Add(std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count());
+                    recorder.Add((int)std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count());
                 }
             };
 

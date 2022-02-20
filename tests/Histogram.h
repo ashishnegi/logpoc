@@ -35,7 +35,7 @@ public:
                 throw std::runtime_error("Invalid input");
             }
 
-            percentileCount.push_back(pAt * count);
+            percentileCount.push_back((int)(pAt * count));
         }
 
         int tmpCount = 0;

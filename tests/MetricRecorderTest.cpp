@@ -5,7 +5,7 @@
 
 TEST(metric_recorder, can_add_get_values) {
     int n = 100;
-    int seed = time(nullptr);
+    int seed = (int)time(nullptr);
     std::cout << "Random seed: " << seed << std::endl;
     std::srand(seed);
 

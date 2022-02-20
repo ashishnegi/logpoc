@@ -4,7 +4,6 @@
 #include <fileapi.h>
 
 #include <fstream>
-#include <experimental/filesystem>
 #include <vector>
 #include <thread>
 
@@ -32,15 +31,15 @@ std::string GetLastErrorAsString()
 void write_win32(HANDLE fileHandle, const int data_in_gb, const char start_char)
 {
     const int offset = 8 * 1024;
-    int buffer[offset];
-    auto start_time = chrono::high_resolution_clock::now();
+    char buffer[offset];
 
+    auto start_time = chrono::high_resolution_clock::now();
     long long myoffset = 0;
     const long long num_records_each_thread = (data_in_gb * 1024 * ((1024 * 1024) / offset));
     for (long long i = 0; i < num_records_each_thread; ++i)
     {
         DWORD bytesWritten;
-        char buffer[offset];
+
         bool error = WriteFile(fileHandle, buffer, sizeof(buffer), &bytesWritten, NULL);
         SetFilePointer(fileHandle, offset, 0, FILE_CURRENT);
 
@@ -143,7 +142,7 @@ DWORD SetSparseRange(HANDLE hSparseFile, LONGLONG start, LONGLONG size)
 TEST(win32, write_preallocated_file_serial_sprase)
 {
     string filename = "file8.log";
-    const int data_in_gb = 2;
+    const LONGLONG data_in_gb = 2;
 
     auto hfile = CreateSparseFile(L"file8.log");
     SetSparseRange(hfile, 0, data_in_gb * 1024 * 1024 * 1024);
