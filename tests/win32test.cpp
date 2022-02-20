@@ -65,6 +65,8 @@ void write_win32(HANDLE fileHandle, const int data_in_gb, const char start_char)
 TEST(win32, write_preallocated_serial_writethrough_no_buffering)
 {
     string filename = "file6.log";
+    std::remove(filename.c_str());
+
     const int data_in_gb = 2;
 
     // create file before write threads start.

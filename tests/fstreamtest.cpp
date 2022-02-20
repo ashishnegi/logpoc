@@ -115,7 +115,7 @@ void PrintHistogram(std::vector<MetricRecorder> recorders) {
 void write_concurrently(string filename, const int data_in_gb, const int num_threads, const char start_char,
     bool stream_cache = true) {
     const int offset = 4 * 1024;
-    const int num_records_each_thread = (data_in_gb * 1024 * ((1024 * 1024)/ (num_threads * offset)));
+    const int num_records_each_thread = ((data_in_gb) * 1024 * ((1024 * 1024)/ (num_threads * offset)));
     std::vector<MetricRecorder> recorders;
     for (int i = 0; i < num_threads; ++i) {
         recorders.push_back(MetricRecorder(num_records_each_thread));
@@ -172,7 +172,7 @@ void write_concurrently(string filename, const int data_in_gb, const int num_thr
     {
         ifstream file(filename, fstream::in | fstream::binary);
         file.seekg(0, ios_base::end);
-        EXPECT_EQ(num_records_each_thread * num_threads * offset, file.tellg());
+        EXPECT_EQ((long long)num_records_each_thread * num_threads * offset, file.tellg());
         file.seekg(0, ios_base::beg);
         EXPECT_TRUE(file);
 
@@ -221,6 +221,8 @@ void write_concurrently(string filename, const int data_in_gb, const int num_thr
 TEST(fstream, write_concurrently_to_same_file)
 {
     string filename = "file4.log";
+    std::remove(filename.c_str());
+
     long data_in_gb = 4;
     {
         // create file before write threads start.
@@ -342,7 +344,7 @@ void append_concurrently(string filename, const int data_in_gb, const int num_th
     {
         ifstream file(filename, fstream::in | fstream::binary);
         file.seekg(0, ios_base::end);
-        EXPECT_EQ(num_records_each_thread * num_threads * offset, file.tellg());
+        EXPECT_EQ((long long)num_records_each_thread * num_threads * offset, file.tellg());
         file.seekg(0, ios_base::beg);
         EXPECT_TRUE(file);
 
